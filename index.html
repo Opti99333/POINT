@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="img-ava.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <title>SPOT</title>
+  <style>
+    :root {
+      --bg: #ffffff;   /* старт: белый фон */
+      --fg: #0a0a0a;   /* чёрная точка / частицы */
+      --text: #0a0a0a; /* стартовый цвет текста */
+    }
+
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      overflow: hidden;
+      transition: background-color 3000ms ease; /* медленнее, чтобы частицы успели долететь */
+    }
+
+    body, button {
+       font-family: "Montserrat", sans-serif !important;
+  font-optical-sizing: auto !important;
+  font-weight: 100 !important;
+  font-style: normal !important;
+    }
+
+    /* Реверс-тема после взрыва */
+    body.inverted { background: #0a0a0a; }
+
+    #scene {
+      position: fixed; inset: 0; display: block; width: 100vw; height: 100vh;
+      background: transparent; cursor: none;
+    }
+
+    /* Центральная точка. Управляем scale из JS по фазам. */
+    .spot {
+      position: fixed; left: 50%; top: 50%;
+      transform: translate(-50%, -50%) scale(0.5); /* изначально в 2 раза меньше */
+      width: min(7vmin, 60px); height: min(7vmin, 60px);
+      background: var(--fg); border-radius: 50%; will-change: transform, background-color;
+      transition: transform 800ms ease, background-color 1500ms ease;
+      pointer-events: none;
+    }
+    /* После инверсии — круг становится белым */
+    body.inverted .spot { background: #ffffff; }
+
+    .headline {
+      position: fixed; left: 50%; top: 75%; transform: translateX(-50%);
+      color: var(--text); font-weight: 300; letter-spacing: 0.01em;
+      font-size: clamp(24px, 2.6vmin, 38px);
+      opacity: 1; /* НЕ исчезает */
+      user-select: none; white-space: nowrap; pointer-events: none;
+      transition: color 1500ms ease; /* смена цвета текста вслед за инверсией */
+    }
+    body.inverted .headline { color: #ffffff; }
+
+    .cursor { position: fixed;
+  left: 0; top: 0;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--fg);        /* чёрный до инверсии */
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 9999;                /* поверх canvas и всего остального */
+  transition: background-color 1500ms ease;
+  /* ВАЖНО: без умножения, чтобы не «исчезал» на чёрном */
+  mix-blend-mode: normal;
+}
+
+/* после инверсии — белая точка, без blend-мода */
+body.inverted .cursor{
+  background: #ffffff;
+  mix-blend-mode: normal;
+}
+  </style>
+</head>
+<body>
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="spot" id="spot"></div>
+  <div class="headline" id="headline" style="">The point is that everything begins with a $POINT.</div>
+  <div class="cursor" id="cursor"></div>
+
+  <script>
+    // === Базовая настройка ===
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    const spot = document.getElementById('spot');
+    const headline = document.getElementById('headline');
+    const cursor = document.getElementById('cursor');
+
+    const center = { x: 0, y: 0 };
+    const DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+
+    // Параметры частиц (вылетают наружу при взрыве)
+    const PARTICLE_COUNT_BASE = 1000; // ГОРАЗДО больше частиц, чтобы закрывали экран
+    let PARTICLE_COUNT = PARTICLE_COUNT_BASE;
+    let particles = [];
+
+    // Фазы: idle -> shrink -> explode
+    let phase = 'idle';
+
+    function resize() {
+      const { innerWidth: w, innerHeight: h } = window;
+      canvas.width = Math.floor(w * DPR);
+      canvas.height = Math.floor(h * DPR);
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      center.x = w / 2; center.y = h / 2;
+
+      // адаптируем число частиц
+      const scale = Math.min(w, h) / 800;
+      PARTICLE_COUNT = Math.max(1000, Math.floor(PARTICLE_COUNT_BASE * (0.7 + scale)));
+    }
+    window.addEventListener('resize', resize, { passive: true });
+    resize();
+
+    // Создать частицы для взрыва: стартуют из центра и летят наружу
+    function makeExplosionParticles() {
+      const baseSpeed = 3; // немного медленнее старт
+      particles = new Array(PARTICLE_COUNT).fill(0).map(() => {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = baseSpeed + Math.random() * 3; // умеренные скорости, чтобы летели дольше
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        return {
+          x: center.x,
+          y: center.y,
+          vx, vy,
+          size: 1 + Math.random() * 4, // чуть крупнее для «заслонения» экрана
+          alpha: 1,
+        };
+      });
+    }
+
+    // Анимационный цикл
+    function draw() {
+      const { innerWidth: w, innerHeight: h } = window;
+      ctx.clearRect(0, 0, w, h);
+
+      if (phase === 'explode') {
+        // рисуем частицы разлёта (чёрные точки)
+        ctx.fillStyle = '#0a0a0a';
+        for (let p of particles) {
+          p.x += p.vx; p.y += p.vy;
+          // Очень лёгкое замедление, чтобы продолжали лететь долго
+          p.vx *= 0.996; p.vy *= 0.996;
+          // Медленное затухание, чтобы их было видно дольше
+          p.alpha -= 0.0018;
+          if (p.alpha < 0) p.alpha = 0;
+
+          if (p.alpha > 0.01) {
+            ctx.globalAlpha = p.alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+
+    // Таймлайн: idle -> shrink -> explode -> invert BG (медленнее)
+    function playReverseIntro() {
+      // 1) лёгкое уменьшение точки (0.5 -> 0.38) — плавно
+      setTimeout(() => {
+        phase = 'shrink';
+        spot.style.transform = 'translate(-50%, -50%) scale(0.38)';
+      }, 800);
+
+      // 2) взрыв — генерим частицы и на мгновение делаем точку ещё меньше
+      setTimeout(() => {
+        phase = 'explode';
+        spot.style.transform = 'translate(-50%, -50%) scale(0.22)';
+        makeExplosionParticles();
+      }, 1600);
+
+      // 3) медленная инверсия темы: фон → чёрный, круг → белый, курсор появляется
+      setTimeout(() => {
+        document.body.classList.add('inverted');
+        cursor.style.opacity = 1;
+      }, 1900);
+
+      // 4) чуть позже возвращаем круг к более заметному размеру
+      setTimeout(() => {
+        spot.style.transform = 'translate(-50%, -50%) scale(0.5)';
+      }, 3200);
+    }
+
+    playReverseIntro();
+
+    // Кастомный курсор
+    window.addEventListener('mousemove', (e) => {
+      cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    });
+  </script>
+</body>
+</html>

@@ -86,10 +86,105 @@ body.inverted .cursor{
   }
 }
 
+/* Шапка как сетка: left | ca | right */
+.top-bar{
+  position: fixed;
+  top: 0; left: 0; width: 100%;
+  padding: max(12px, env(safe-area-inset-top)) clamp(16px, 3vw, 32px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "left ca right";
+  align-items: center;
+  gap: 12px;
+  z-index: 10000;
+}
+
+/* Лево/право помещаем в области сетки */
+.top-bar .btn-link.left  { grid-area: left;  justify-self: start; }
+.top-bar .btn-link.right { grid-area: right; justify-self: end; }
+
+/* Кнопки — выразительные и адаптивные */
+.btn-link{
+  font-size: clamp(12px, 1.6vw, 15px);
+  font-weight: 700;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--fg);
+  border: 2px solid var(--fg);
+  padding: clamp(6px, 1.2vw, 9px) clamp(14px, 2.4vw, 22px);
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  transition: transform .15s ease, box-shadow .25s ease, background-color .25s ease, color .25s ease, border-color .25s ease;
+  box-shadow: 0 0 0 transparent;
+  will-change: transform;
+}
+.btn-link:hover{ background: var(--fg); color: #fff; box-shadow: 0 0 14px rgba(0,0,0,.28); transform: translateY(-1px); }
+.btn-link:active{ transform: translateY(0); box-shadow: none; }
+
+/* Инверсия цветов в тёмной теме */
+body.inverted .btn-link{ color:#fff; border-color:#fff; }
+body.inverted .btn-link:hover{ background:#fff; color:#000; box-shadow:0 0 16px rgba(255,255,255,.35); }
+
+/* CA по центру — чип с адаптивным размером */
+.top-bar h3{
+  grid-area: ca;
+  justify-self: center;
+  margin: 0;
+  padding: clamp(6px, 1vw, 8px) clamp(12px, 2vw, 18px);
+  font-size: clamp(12px, 1.6vw, 15px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg);
+  border: 2px solid var(--fg);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+body.inverted .top-bar h3{ color:#fff; border-color:#fff; }
+
+/* 📱 Мобильная адаптация */
+@media (max-width: 720px){
+  /* Строим 2 строки: 1) кнопки слева/справа, 2) CA по центру */
+  .top-bar{
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "left  right"
+      "ca    ca";
+    row-gap: 10px;
+    padding: max(10px, env(safe-area-inset-top)) 14px;
+  }
+  .top-bar .btn-link.left{ justify-self: start; }
+  .top-bar .btn-link.right{ justify-self: end; }
+  .top-bar h3{ justify-self: center; }
+
+  /* Чуть компактнее кнопки и CA */
+  .btn-link{
+    padding: 8px 14px;
+    letter-spacing: .07em;
+  }
+  .top-bar h3{
+    padding: 6px 12px;
+    letter-spacing: .12em;
+  }
+}
+
+/* Узкие экраны */
+@media (max-width: 420px){
+  .btn-link{ font-size: 11.5px; padding: 7px 12px; }
+  .top-bar h3{ font-size: 11.5px; }
+}
+
+
+
   </style>
 </head>
 <body>
   <canvas id="scene" aria-hidden="true"></canvas>
+<header class="top-bar">
+  <a href="https://dexscreener.com/solana/coming soon" target="_blank" class="btn-link left">Dexscreener</a>
+  <h3>CA: Coming soon</h3>
+  <a href="https://x.com/" target="_blank" class="btn-link right" style="margin-right: 10%;">Twitter</a>
+</header>
   <div class="spot" id="spot"></div>
   <div class="headline" id="headline">The point is that everything begins with a $POINT.</div>
   <div class="cursor" id="cursor"></div>

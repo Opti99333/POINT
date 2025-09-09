@@ -84,6 +84,9 @@ body.inverted .cursor{
   .headline{
     font-size: 16.5px !important;
   }
+  .caa{
+    font-size: 10px !important
+  }
 }
 
 /* Шапка как сетка: left | ca | right */
@@ -126,10 +129,53 @@ body.inverted .btn-link{ color:#fff; border-color:#fff; }
 body.inverted .btn-link:hover{ background:#fff; color:#000; box-shadow:0 0 16px rgba(255,255,255,.35); }
 
 /* CA по центру — чип с адаптивным размером */
+/* Шапка как сетка: left | ca | right */
+.top-bar{
+  position: fixed;
+  top: 0; left: 0; width: 100%;
+  box-sizing: border-box;
+  padding: max(12px, env(safe-area-inset-top)) clamp(16px, 3vw, 32px);
+  display: grid;
+  /* боковые колонки сжимаются, центральная — по контенту */
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+  grid-template-areas: "left ca right";
+  align-items: center;
+  gap: 12px;
+  z-index: 10000;
+}
+
+/* не даём детям раздвигать колонки из-за переполнения */
+.top-bar > * { min-width: 0; }
+
+.top-bar .btn-link.left  { grid-area: left;  justify-self: start; }
+.top-bar .btn-link.right { grid-area: right; justify-self: end; }
+
+.btn-link{
+  font-size: clamp(12px, 1.6vw, 15px);
+  font-weight: 700;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--fg);
+  border: 2px solid var(--fg);
+  padding: clamp(6px, 1.2vw, 9px) clamp(14px, 2.4vw, 22px);
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  transition: transform .15s ease, box-shadow .25s ease, background-color .25s ease, color .25s ease, border-color .25s ease;
+  box-shadow: 0 0 0 transparent;
+  will-change: transform;
+
+  /* защита от обрезания за пределы экрана */
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* CA по центру — чип */
 .top-bar h3{
   grid-area: ca;
   justify-self: center;
-  margin: 0;
+  margin: 0; /* <— важно */
   padding: clamp(6px, 1vw, 8px) clamp(12px, 2vw, 18px);
   font-size: clamp(12px, 1.6vw, 15px);
   font-weight: 700;
@@ -140,11 +186,14 @@ body.inverted .btn-link:hover{ background:#fff; color:#000; box-shadow:0 0 16px 
   border-radius: 999px;
   white-space: nowrap;
 }
+
+/* Инверсия */
+body.inverted .btn-link{ color:#fff; border-color:#fff; }
+body.inverted .btn-link:hover{ background:#fff; color:#000; box-shadow:0 0 16px rgba(255,255,255,.35); }
 body.inverted .top-bar h3{ color:#fff; border-color:#fff; }
 
 /* 📱 Мобильная адаптация */
 @media (max-width: 720px){
-  /* Строим 2 строки: 1) кнопки слева/справа, 2) CA по центру */
   .top-bar{
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
@@ -157,7 +206,6 @@ body.inverted .top-bar h3{ color:#fff; border-color:#fff; }
   .top-bar .btn-link.right{ justify-self: end; }
   .top-bar h3{ justify-self: center; }
 
-  /* Чуть компактнее кнопки и CA */
   .btn-link{
     padding: 8px 14px;
     letter-spacing: .07em;
@@ -175,15 +223,14 @@ body.inverted .top-bar h3{ color:#fff; border-color:#fff; }
 }
 
 
-
   </style>
 </head>
 <body>
   <canvas id="scene" aria-hidden="true"></canvas>
 <header class="top-bar">
   <a href="https://dexscreener.com/solana/coming soon" target="_blank" class="btn-link left">Dexscreener</a>
-  <h3>CA: Coming soon</h3>
-  <a href="https://x.com/" target="_blank" class="btn-link right" style="margin-right: 10%;">Twitter</a>
+  <h3 class="caa">CA: 3FeFKTFQk2pEWwqax7vjxz6jSbFUpPASnACRSzDQcSRQ</h3>
+  <a href="https://x.com/" target="_blank" class="btn-link right">Twitter</a>
 </header>
   <div class="spot" id="spot"></div>
   <div class="headline" id="headline">The point is that everything begins with a $POINT.</div>

@@ -371,6 +371,27 @@ body.inverted .top-bar h3{ color:#fff; border-color:#fff; }
   font-weight: 300 !important;
   font-style: normal !important;
 }
+
+/* Контейнер кнопки BUY — центр под headline */
+.buy-cta{
+  position: fixed;
+  left: 50%;
+  top: calc(75% + clamp(28px, 3.5vmin, 56px)); /* чуть ниже заголовка */
+  transform: translateX(-50%);
+  z-index: 10001; /* выше canvas и точки */
+}
+
+/* Кнопка уже наследует стиль .btn-link, но можно чуть уплотнить на мобилках */
+@media (max-width: 600px){
+  .buy-cta{ top: calc(75% + 36px); }
+  .buy-cta .btn-link{
+    padding: 6px 14px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+}
+
+
   </style>
 </head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-R24XBV159E"></script>
@@ -390,8 +411,11 @@ body.inverted .top-bar h3{ color:#fff; border-color:#fff; }
 </header>
   <div class="spot" id="spot"></div>
   <div class="headline" id="headline">The point is that everything begins with a $POINT.</div>
+  <div class="buy-cta" style="margin-top: 2%;">
+  <a href="https://jup.ag/swap?sell=So11111111111111111111111111111111111111112&buy=HMGyPDA1RfbdjWv3oJuoRS6FDwLAu3zffGL6iitsSDm9"
+     target="_blank" class="btn-link">BUY</a>
+</div>
   <div class="cursor" id="cursor"></div>
-
   <script>
     // === Базовая настройка ===
     const canvas = document.getElementById('scene');
